@@ -16,6 +16,7 @@ from src.embeddings import get_embedder
 from src.generate.llm import LLMClient
 from src.prompts.answer import ANSWER_SYSTEM, ANSWER_USER, CONTEXT_ITEM
 from src.retrieve.hybrid import hybrid_search
+from src.retrieve.reranker import rerank
 from src.retrieve.store import SearchHit, VectorStore
 
 
@@ -28,14 +29,30 @@ class AnswerResult:
 
 
 def _retrieve(
-    question: str, top_k: int, paper_ids: list[str] | None, mode: str | None = None
+    question: str,
+    top_k: int,
+    paper_ids: list[str] | None,
+    mode: str | None = None,
+    use_rerank: bool | None = None,
 ) -> list[SearchHit]:
-    """检索 top_k。mode: dense（纯向量）| hybrid（BM25+向量+RRF）。"""
+    """检索链路：召回(dense|hybrid) → (可选)重排 → top_k。
+
+    mode: dense（纯向量）| hybrid（BM25+向量+RRF）；use_rerank: 是否重排。
+    两个开关组合用于 P3 消融对比。
+    """
     mode = mode or settings.retrieve_mode
+    use_rerank = settings.use_rerank if use_rerank is None else use_rerank
+    recall = settings.retrieve_top_k
+
     if mode == "dense":
         qvec = get_embedder().encode_dense([question])[0]
-        return VectorStore().search_dense(qvec, top_k=top_k, paper_ids=paper_ids)
-    return hybrid_search(question, top_k=top_k, paper_ids=paper_ids)
+        cands = VectorStore().search_dense(qvec, top_k=recall, paper_ids=paper_ids)
+    else:
+        cands = hybrid_search(question, top_k=recall, paper_ids=paper_ids)
+
+    if use_rerank:
+        return rerank(question, cands, top_n=top_k)
+    return cands[:top_k]
 
 
 def _build_messages(question: str, hits: list[SearchHit]) -> list[dict]:
@@ -63,9 +80,10 @@ def answer(
     top_k: int | None = None,
     paper_ids: list[str] | None = None,
     mode: str | None = None,
+    use_rerank: bool | None = None,
 ) -> AnswerResult:
     """非流式作答。"""
-    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids, mode)
+    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids, mode, use_rerank)
     if not hits:
         return AnswerResult(answer="知识库为空或未检索到相关内容。", sources=[])
     text = LLMClient().chat(_build_messages(question, hits))
@@ -77,9 +95,10 @@ def answer_stream(
     top_k: int | None = None,
     paper_ids: list[str] | None = None,
     mode: str | None = None,
+    use_rerank: bool | None = None,
 ) -> tuple[Iterator[str], list[SearchHit]]:
     """流式作答：返回 (文本增量迭代器, 来源列表)。"""
-    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids, mode)
+    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids, mode, use_rerank)
     if not hits:
         return iter(["知识库为空或未检索到相关内容。"]), []
     return LLMClient().chat_stream(_build_messages(question, hits)), hits

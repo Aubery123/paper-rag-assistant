@@ -52,9 +52,13 @@ class Settings(BaseSettings):
 
     # ---- 检索 hybrid → rerank ----
     retrieve_mode: str = Field(default="hybrid")  # dense | hybrid（P3 消融用）
-    retrieve_top_k: int = Field(default=20)   # 每路召回数量
+    use_rerank: bool = Field(default=True)        # 是否重排（P3 消融用）
+    retrieve_top_k: int = Field(default=20)   # 每路召回 / 送入重排的候选数
     rrf_k: int = Field(default=60)            # RRF 融合常数
     rerank_top_k: int = Field(default=5)      # 重排后送入 LLM 的数量
+    rerank_url: str = Field(
+        default="https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank"
+    )
 
 
 settings = Settings()
