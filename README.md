@@ -29,6 +29,9 @@ cp .env.example .env                 # 填 DASHSCOPE_API_KEY（百炼）
 python main.py ingest ./data/papers/                 # 导入论文
 python main.py ask "FLASH 在服务器端如何做漂移感知优化？"   # 提问（带引用）
 python main.py eval --limit 2                         # 跑评测（测试用，限 2 题）
+
+uvicorn src.api:app --reload                         # 起 API（/ask、/ask/stream SSE）
+streamlit run app.py                                 # 起聊天界面（引用展示 + 多篇对比）
 ```
 
 ## 评测（项目核心）
@@ -65,4 +68,5 @@ python main.py eval --limit 2                         # 跑评测（测试用，
 
 - [x] P0 骨架 · [x] P1 MVP（端到端） · [x] P2 检索增强（混合+重排+引用）
 - [x] P3 评测驱动（框架完成，结果待语料扩充后复跑）
-- [ ] P4 产品化（SSE + Streamlit + 多文档对比）· [ ] P5 工程化（CI + Docker + 简历段）
+- [x] P4 产品化（FastAPI SSE + Streamlit 聊天界面 + 多文档对比）
+- [ ] P5 工程化（CI + Docker + 简历段）
