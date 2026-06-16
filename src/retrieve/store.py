@@ -97,5 +97,22 @@ class VectorStore:
         )
         return [SearchHit(score=p.score, payload=p.payload) for p in res.points]
 
+    def scroll_all(self) -> list[dict]:
+        """取出 collection 内全部点的 payload（供 BM25 建全量索引）。"""
+        payloads: list[dict] = []
+        offset = None
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=self.collection,
+                limit=256,
+                with_payload=True,
+                with_vectors=False,
+                offset=offset,
+            )
+            payloads.extend(p.payload for p in points)
+            if offset is None:
+                break
+        return payloads
+
     def count(self) -> int:
         return self.client.count(self.collection).count

@@ -1,8 +1,9 @@
 # ---- 文档解析 ----
 pymupdf>=1.24            # PDF 解析，保留页码/章节
 
-# ---- 向量库 ----
-qdrant-client>=1.9       # 向量检索；P2 混合检索用 Qdrant 原生 BM25
+# ---- 向量库 / 检索 ----
+qdrant-client>=1.9       # 向量检索
+rank-bm25>=0.2           # BM25 关键词检索（纯 Python，与向量做 RRF 融合）
 
 # ---- 阿里百炼 API（LLM 作答 + 文本嵌入 + 重排，OpenAI 兼容接口）----
 openai>=1.30             # 统一走 dashscope compatible-mode 端点

@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     chunk_overlap: int = Field(default=120)
 
     # ---- 检索 hybrid → rerank ----
+    retrieve_mode: str = Field(default="hybrid")  # dense | hybrid（P3 消融用）
     retrieve_top_k: int = Field(default=20)   # 每路召回数量
     rrf_k: int = Field(default=60)            # RRF 融合常数
     rerank_top_k: int = Field(default=5)      # 重排后送入 LLM 的数量

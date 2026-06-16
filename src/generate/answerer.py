@@ -15,6 +15,7 @@ from src.config import settings
 from src.embeddings import get_embedder
 from src.generate.llm import LLMClient
 from src.prompts.answer import ANSWER_SYSTEM, ANSWER_USER, CONTEXT_ITEM
+from src.retrieve.hybrid import hybrid_search
 from src.retrieve.store import SearchHit, VectorStore
 
 
@@ -26,9 +27,15 @@ class AnswerResult:
     sources: list[SearchHit]
 
 
-def _retrieve(question: str, top_k: int, paper_ids: list[str] | None) -> list[SearchHit]:
-    qvec = get_embedder().encode_dense([question])[0]
-    return VectorStore().search_dense(qvec, top_k=top_k, paper_ids=paper_ids)
+def _retrieve(
+    question: str, top_k: int, paper_ids: list[str] | None, mode: str | None = None
+) -> list[SearchHit]:
+    """检索 top_k。mode: dense（纯向量）| hybrid（BM25+向量+RRF）。"""
+    mode = mode or settings.retrieve_mode
+    if mode == "dense":
+        qvec = get_embedder().encode_dense([question])[0]
+        return VectorStore().search_dense(qvec, top_k=top_k, paper_ids=paper_ids)
+    return hybrid_search(question, top_k=top_k, paper_ids=paper_ids)
 
 
 def _build_messages(question: str, hits: list[SearchHit]) -> list[dict]:
@@ -52,10 +59,13 @@ def _build_messages(question: str, hits: list[SearchHit]) -> list[dict]:
 
 
 def answer(
-    question: str, top_k: int | None = None, paper_ids: list[str] | None = None
+    question: str,
+    top_k: int | None = None,
+    paper_ids: list[str] | None = None,
+    mode: str | None = None,
 ) -> AnswerResult:
     """非流式作答。"""
-    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids)
+    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids, mode)
     if not hits:
         return AnswerResult(answer="知识库为空或未检索到相关内容。", sources=[])
     text = LLMClient().chat(_build_messages(question, hits))
@@ -63,10 +73,13 @@ def answer(
 
 
 def answer_stream(
-    question: str, top_k: int | None = None, paper_ids: list[str] | None = None
+    question: str,
+    top_k: int | None = None,
+    paper_ids: list[str] | None = None,
+    mode: str | None = None,
 ) -> tuple[Iterator[str], list[SearchHit]]:
     """流式作答：返回 (文本增量迭代器, 来源列表)。"""
-    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids)
+    hits = _retrieve(question, top_k or settings.rerank_top_k, paper_ids, mode)
     if not hits:
         return iter(["知识库为空或未检索到相关内容。"]), []
     return LLMClient().chat_stream(_build_messages(question, hits)), hits
