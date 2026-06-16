@@ -1,0 +1,16 @@
+.git
+.github
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+data/
+qdrant_storage/
+reports/
+.cache/
+models/
+*.db
+tests/
+.idea/
+.vscode/

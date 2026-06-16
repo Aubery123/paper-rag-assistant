@@ -8,3 +8,28 @@ services:
     volumes:
       - ./qdrant_storage:/qdrant/storage
     restart: unless-stopped
+
+  api:
+    build: .
+    container_name: paper-rag-api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      QDRANT_URL: http://qdrant:6333   # 容器网络内用服务名访问
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  ui:
+    build: .
+    container_name: paper-rag-ui
+    command: streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true
+    ports:
+      - "8501:8501"
+    env_file: .env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+    depends_on:
+      - qdrant
+    restart: unless-stopped

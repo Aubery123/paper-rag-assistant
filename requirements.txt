@@ -20,7 +20,8 @@ pydantic-settings>=2.3
 python-dotenv>=1.0
 
 # ---- 评测 ----
-ragas>=0.1               # RAGAS 风格指标
+# RAGAS 风格指标为自实现（见 src/eval/metrics.py），全程走百炼 API，无需 ragas/langchain
+numpy>=1.26               # 指标向量计算
 
 # ---- 测试 ----
 pytest>=8.2

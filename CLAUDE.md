@@ -148,7 +148,7 @@ streamlit run app.py
 - [x] **P2 检索增强**：混合检索（BM25+向量+RRF）+ 重排序 + **引用溯源**
 - [x] **P3 评测驱动**：评测集（含页级 gold）+ RAGAS 风格指标 + 确定性检索指标 + **消融出表**（框架完成；可信增益待扩语料+核准 gold 后复跑）
 - [x] **P4 产品化**：SSE 流式输出（FastAPI）+ Streamlit 聊天界面（引用展示）+ 多文档对比
-- [ ] **P5 工程化**：pytest 单测 + GitHub Actions CI + Docker 封装 + README + 简历段
+- [x] **P5 工程化**：pytest 单测 + GitHub Actions CI + Docker 封装 + README + 简历段
 
 > 每个 Phase 完成后：更新本进度 + 提交并推送 GitHub。
 
