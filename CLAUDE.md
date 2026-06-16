@@ -143,7 +143,7 @@ streamlit run app.py
 
 ## 进度
 
-- [ ] **P0 骨架**：目录 + 依赖 + Docker(Qdrant) + PDF/arXiv 导入与解析（出页码/章节）
+- [x] **P0 骨架**：目录 + 依赖 + Docker(Qdrant) + PDF/arXiv 导入与解析（出页码/章节）
 - [ ] **P1 MVP**：切分 + Embedding + Qdrant 入库 + 基础向量检索 + LLM 作答（端到端跑通）
 - [ ] **P2 检索增强**：混合检索（BM25+向量+RRF）+ 重排序 + **引用溯源**
 - [ ] **P3 评测驱动**：评测集 + RAGAS 指标 + **消融对比实验出表**
