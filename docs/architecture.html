@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论文研读 RAG 助手 · 技术说明</title>
+<style>
+  :root{
+    --ink:#1f2329; --muted:#6b7280; --line:#e5e7eb; --soft:#f3f4f6;
+    --accent:#2563eb; --accent-soft:#eff4ff;
+    --code-bg:#1e2430; --code-ink:#e6edf3;
+    --chip-bg:#fdeaea; --chip-ink:#d6336c;
+    --green:#16a34a; --blue:#2563eb; --orange:#f97316;
+    --maxw:880px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:#fafbfc; color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.85; font-size:16px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:56px 28px 120px;}
+  .doc-title{font-size:34px; font-weight:800; letter-spacing:.3px; margin:0 0 10px;}
+  .doc-sub{color:var(--muted); font-size:16px; margin:0 0 18px;}
+  .rule{height:3px; background:var(--accent); border-radius:2px; border:0; margin:0 0 8px;}
+  h2{font-size:23px; font-weight:800; margin:54px 0 0; padding-bottom:12px; border-bottom:1px solid var(--line);}
+  h3{font-size:18px; font-weight:700; margin:34px 0 12px;}
+  h4{font-size:15.5px; font-weight:700; margin:22px 0 8px; color:#374151;}
+  p{margin:14px 0;}
+  ul,ol{margin:14px 0; padding-left:22px;}
+  li{margin:7px 0;}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  strong{font-weight:700;}
+  code{
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    background:var(--chip-bg); color:var(--chip-ink);
+    padding:2px 7px; border-radius:6px; font-size:13.5px;
+  }
+  pre{
+    background:var(--code-bg); color:var(--code-ink);
+    padding:18px 20px; border-radius:12px; overflow-x:auto;
+    font-family:"SFMono-Regular",Consolas,Menlo,monospace; font-size:13px; line-height:1.7;
+    margin:18px 0;
+  }
+  pre code{background:none; color:inherit; padding:0; font-size:inherit;}
+  .callout{border-radius:10px; padding:16px 18px 16px 20px; margin:20px 0; background:#fff; border:1px solid var(--line);}
+  .callout .tag{display:inline-block; font-size:12px; font-weight:700; padding:3px 9px; border-radius:6px; margin-bottom:8px;}
+  .callout p:first-of-type{margin-top:0;} .callout p:last-child{margin-bottom:0;}
+  .c-green{border-left:4px solid var(--green);}  .c-green .tag{background:#e7f6ec; color:var(--green);}
+  .c-blue{border-left:4px solid var(--blue);}    .c-blue .tag{background:var(--accent-soft); color:var(--blue);}
+  .c-orange{border-left:4px solid var(--orange);}.c-orange .tag{background:#fff0e6; color:#ea580c;}
+  .flow{display:flex; flex-wrap:wrap; align-items:center; gap:10px 8px; background:#fff;
+        border:1px solid var(--line); border-radius:12px; padding:20px; margin:20px 0;}
+  .node{background:var(--accent-soft); color:#1e40af; border:1px solid #c7d8fb;
+        border-radius:9px; padding:9px 14px; font-size:13.5px; font-weight:600; white-space:nowrap;}
+  .node.alt{background:#f6f7f9; color:#374151; border-color:var(--line);}
+  .arrow{color:#9aa3af; font-size:15px;}
+  table{width:100%; border-collapse:collapse; margin:20px 0; font-size:14.5px;}
+  th{text-align:left; font-weight:700; padding:11px 12px; border-bottom:2px solid #d8dde3;}
+  td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tbody tr:hover{background:#fafbfc;}
+  .agent{border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:16px 0; background:#fff;}
+  .agent .head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px;}
+  .agent .emoji{font-size:20px;}
+  .agent .name{font-size:17px; font-weight:700;}
+  .agent .file{font-size:12px; color:var(--muted); font-family:Consolas,monospace;}
+  .badges{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0;}
+  .badge{background:#fff; border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-size:13px; color:#374151;}
+  .toc{background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:26px 0;}
+  .toc h4{margin:0 0 10px; color:var(--ink);}
+  .toc ol{margin:0; padding-left:20px; columns:2; column-gap:32px;}
+  .toc li{margin:5px 0;}
+  .lead{font-size:16.5px; color:#374151;}
+  .footer{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px;}
+  @media(max-width:640px){ .toc ol{columns:1;} .doc-title{font-size:27px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1 class="doc-title">论文研读 RAG 助手 · 技术说明</h1>
+  <p class="doc-sub">生产级 RAG + 评测驱动 —— 导入论文，得到带精确引用溯源（哪篇 / 哪节 / 哪页）的答案</p>
+  <hr class="rule">
+
+  <div class="badges">
+    <span class="badge">PyMuPDF 结构化解析</span>
+    <span class="badge">混合检索 BM25 + 向量 + RRF</span>
+    <span class="badge">重排 gte-rerank-v2</span>
+    <span class="badge">引用溯源</span>
+    <span class="badge">Evals + 消融</span>
+    <span class="badge">阿里百炼 API</span>
+    <span class="badge">Qdrant</span>
+    <span class="badge">FastAPI · SSE</span>
+    <span class="badge">Streamlit</span>
+    <span class="badge">pytest · CI · Docker</span>
+  </div>
+
+  <div class="toc">
+    <h4>目录</h4>
+    <ol>
+      <li><a href="#s1">系统定位</a></li>
+      <li><a href="#s2">整体架构与数据流</a></li>
+      <li><a href="#s3">技术栈全景</a></li>
+      <li><a href="#s4">关键模块拆解</a></li>
+      <li><a href="#s5">核心机制详解</a></li>
+      <li><a href="#s6">开发中遇到的问题与解决</a></li>
+      <li><a href="#s7">设计取舍与限制</a></li>
+      <li><a href="#s8">运行方式</a></li>
+    </ol>
+  </div>
+
+  <h2 id="s1">1 · 系统定位</h2>
+  <p class="lead">研究生每天啃大量论文，痛点是"跨多篇找信息慢、出处记混、写综述要反复对比"。本项目导入研究领域的论文（PDF / arXiv），构建可问答知识库，回答时给出<strong>精确到篇 / 节 / 页的引用溯源</strong>，并支持多篇对比。</p>
+  <p>它刻意与作者的另一项目（多 Agent 痛点挖掘系统）<strong>互补不重复</strong>：那个主打多 Agent 编排，本项目主打 <strong>RAG 深度 + 评测驱动</strong>——不止"能跑"，而是建评测集<strong>量化每一处改进</strong>。</p>
+
+  <h2 id="s2">2 · 整体架构与数据流</h2>
+  <h3>离线 · 入库 ingest</h3>
+  <div class="flow">
+    <span class="node">论文 PDF</span><span class="arrow">→</span>
+    <span class="node">PyMuPDF 解析<br>（页码/章节）</span><span class="arrow">→</span>
+    <span class="node">按页结构化切分<br>+ 元数据</span><span class="arrow">→</span>
+    <span class="node">百炼 Embedding</span><span class="arrow">→</span>
+    <span class="node">写入 Qdrant</span>
+  </div>
+  <h3>在线 · 问答 retrieve → generate</h3>
+  <div class="flow">
+    <span class="node">用户问题</span><span class="arrow">→</span>
+    <span class="node">混合检索<br>BM25 + 向量 + RRF</span><span class="arrow">→</span>
+    <span class="node">重排<br>gte-rerank-v2</span><span class="arrow">→</span>
+    <span class="node">带引用溯源的<br>LLM 流式作答</span><span class="arrow">→</span>
+    <span class="node alt">多篇对比</span>
+  </div>
+  <h3>评测 eval · 重头戏</h3>
+  <div class="flow">
+    <span class="node">评测集<br>问题+参考答案+页级金标准</span><span class="arrow">→</span>
+    <span class="node">检索层指标<br>页级 Recall@k / MRR</span>
+    <span class="arrow">+</span>
+    <span class="node">生成层指标<br>忠实度/相关性/召回</span><span class="arrow">→</span>
+    <span class="node alt">4 配置消融出表</span>
+  </div>
+
+  <h2 id="s3">3 · 技术栈全景</h2>
+  <table>
+    <thead><tr><th>层</th><th>选型</th><th>落地位置</th></tr></thead>
+    <tbody>
+      <tr><td>文档解析</td><td>PyMuPDF（fitz），保留页码 / 章节结构</td><td><code>ingest/loader.py</code></td></tr>
+      <tr><td>切分</td><td>结构感知按页切分 + 元数据 <code>{paper_id,title,section,page}</code></td><td><code>ingest/chunker.py</code></td></tr>
+      <tr><td>Embedding</td><td>阿里百炼 <code>text-embedding-v3</code>（API，1024 维，自动分批）</td><td><code>embeddings.py</code></td></tr>
+      <tr><td>向量库</td><td><strong>Qdrant</strong>（dense 向量 + 稀疏槽位预留，按 paper_id 过滤）</td><td><code>retrieve/store.py</code></td></tr>
+      <tr><td>检索</td><td><strong>混合检索</strong>：BM25（rank-bm25）+ 向量 + <strong>RRF 融合</strong></td><td><code>retrieve/hybrid.py</code></td></tr>
+      <tr><td>重排</td><td>百炼 <code>gte-rerank-v2</code>（原生 API，httpx 直连）</td><td><code>retrieve/reranker.py</code></td></tr>
+      <tr><td>生成</td><td>百炼 <code>qwen-plus</code>，带引用溯源作答（流式 + 非流式）</td><td><code>generate/</code></td></tr>
+      <tr><td>评测</td><td>确定性检索指标 + RAGAS 风格 LLM 判分指标 + 消融</td><td><code>eval/</code></td></tr>
+      <tr><td>服务 / 前端</td><td>FastAPI（REST + SSE 流式）· Streamlit 聊天界面</td><td><code>api.py</code> · <code>app.py</code></td></tr>
+      <tr><td>工程化</td><td>pytest 单测 · GitHub Actions CI · Docker / docker-compose</td><td><code>tests/</code> · <code>.github/</code></td></tr>
+    </tbody>
+  </table>
+  <div class="callout c-blue"><span class="tag">差异化</span>
+    <p>向量库用 Qdrant（区别于另一项目的 Chroma）；混合检索 / 重排 / 引用溯源 / 评测驱动均为另一项目所无。LLM / Embedding 模型层复用百炼以省成本——区分点落在编排、存储、检索、评测层。</p>
+  </div>
+
+  <h2 id="s4">4 · 关键模块拆解</h2>
+
+  <div class="agent">
+    <div class="head"><span class="emoji">📄</span><span class="name">loader · PDF 解析</span><span class="file">ingest/loader.py</span></div>
+    <p>逐页解析，输出带 <code>{paper_id,title,section,page}</code> 的结构化文本。章节识别两级兜底：优先用 PDF 内置目录 <code>get_toc()</code>（按一级条目数自适应"标题 / 章节"层级），无目录时正则识别章节标题行。标题解析优先级：TOC 根 &gt; 元数据 &gt; 首页最大字号 &gt; 文件名。</p>
+  </div>
+
+  <div class="agent">
+    <div class="head"><span class="emoji">✂️</span><span class="name">chunker · 结构化切分</span><span class="file">ingest/chunker.py</span></div>
+    <p><strong>按页切分</strong>，使每个 chunk 只归属一页 → 引用页码绝对精确。递归分隔符（段落→行→句→字符）尽量在自然边界断开，相邻 chunk 带字符级重叠，过短尾块并入前块。每个 chunk 继承所在页元数据 + 唯一 <code>chunk_id</code>。</p>
+  </div>
+
+  <div class="agent">
+    <div class="head"><span class="emoji">🔎</span><span class="name">hybrid · 混合检索</span><span class="file">retrieve/hybrid.py</span></div>
+    <p>向量路（百炼 embedding + Qdrant 余弦）与关键词路（rank-bm25，中文逐字 / 英文整词分词）并行召回，用 <strong>RRF</strong> 按各路排名倒数加权融合。BM25 索引进程内懒加载缓存。</p>
+  </div>
+
+  <div class="agent">
+    <div class="head"><span class="emoji">🎯</span><span class="name">reranker · 重排</span><span class="file">retrieve/reranker.py</span></div>
+    <p>对混合召回的候选用百炼 <code>gte-rerank-v2</code> 精排（httpx 直连原生端点），返回按相关度排序的 top-k。</p>
+  </div>
+
+  <div class="agent">
+    <div class="head"><span class="emoji">💬</span><span class="name">answerer · 引用作答</span><span class="file">generate/answerer.py</span></div>
+    <p>检索链路定型为 <code>召回(dense|hybrid, k=20) → 重排 → top_k</code>，拼装带编号资料喂给 qwen，要求每个论断标注 <code>[编号]</code> 并可回溯到篇 / 节 / 页。提供流式与非流式两种。检索方式与是否重排为开关，供消融。</p>
+  </div>
+
+  <div class="agent">
+    <div class="head"><span class="emoji">📊</span><span class="name">eval · 评测</span><span class="file">eval/</span></div>
+    <p>评测集含问题 + 参考答案 + <strong>页级金标准</strong>。指标分两层：检索层（确定性、无 LLM）页级 Recall@k / MRR；生成层（RAGAS 风格 LLM 判分）忠实度 / 答案相关性 / 上下文召回。<code>run_eval.py</code> 对 4 配置消融出双表。</p>
+  </div>
+
+  <div class="agent">
+    <div class="head"><span class="emoji">🌐</span><span class="name">api / app · 服务与界面</span><span class="file">api.py · app.py</span></div>
+    <p>FastAPI 暴露 <code>/health</code>、<code>/ask</code>、<code>/ask/stream</code>（SSE 逐 token + sources 事件）；Streamlit 聊天界面带流式渲染、引用展示、多篇对比与检索开关。</p>
+  </div>
+
+  <h2 id="s5">5 · 核心机制详解</h2>
+  <h3>5.1 RRF 融合</h3>
+  <p>对每一路检索结果按排名计算 <code>score = Σ 1/(rrf_k + rank)</code>，两路相加后排序。无需归一化不同路的分数尺度，鲁棒且实现简单。同时出现在两路的 chunk 自然获得更高融合分。</p>
+  <h3>5.2 引用溯源</h3>
+  <p>引用的根基是<strong>每个 chunk 必带 <code>{paper_id,title,section,page}</code></strong>。检索结果编号后注入提示词，模型作答时标 <code>[编号]</code>，前端 / CLI 再把编号映射回"《论文》· 章节 · 第 N 页"。按页切分保证页码无歧义。</p>
+  <h3>5.3 评测分层</h3>
+  <p>把<strong>检索质量</strong>与<strong>生成质量</strong>解耦衡量：检索层用确定性的页级 Recall@k / MRR（零 LLM、零噪声、近乎零成本）；生成层用 LLM-as-judge 的 RAGAS 风格指标。消融对比 <code>纯向量 / +重排 / 混合 / 混合+重排</code> 四配置。</p>
+
+  <h2 id="s6">6 · 开发中遇到的问题与解决</h2>
+
+  <div class="callout c-orange"><span class="tag">问题 1 · 章节识别</span>
+    <p>PDF 内置目录（TOC）层级语义不一致：部分论文一级条目是<strong>论文标题</strong>，部分一级条目直接是<strong>章节</strong>（Introduction…）。</p>
+    <p><strong>解决：</strong>按一级条目数量自适应——恰 1 个则视其为标题、章节取 level≥2；多个则一级即章节、取 level≥1。无 TOC 的论文（如 Flash）退回正则识别标题行兜底。</p>
+  </div>
+
+  <div class="callout c-orange"><span class="tag">问题 2 · Windows 编码</span>
+    <p>控制台打印中文 / 特殊字符报 <code>UnicodeEncodeError</code>（GBK）。</p>
+    <p><strong>解决：</strong>各 CLI 入口 <code>sys.stdout.reconfigure(encoding="utf-8", errors="replace")</code>。</p>
+  </div>
+
+  <div class="callout c-orange"><span class="tag">问题 3 · 纯向量召回单一</span>
+    <p>宽泛的对比类问题被某一篇的"相关工作"段垄断 top-k，召回多样性不足，答案偏。</p>
+    <p><strong>解决：</strong>引入 BM25 + 向量 + RRF 混合检索，召回从单篇扩到跨多篇；再加重排提升精度。这是检索增强价值最直观的一次体现。</p>
+  </div>
+
+  <div class="callout c-orange"><span class="tag">问题 4 · API 形态差异</span>
+    <p>百炼重排不在 OpenAI 兼容端点上，openai SDK 调不到。</p>
+    <p><strong>解决：</strong>用 httpx 直连 DashScope 原生 rerank 端点；嵌入 / 作答仍走兼容端点。</p>
+  </div>
+
+  <div class="callout c-orange"><span class="tag">问题 5 · 评测指标无区分度（关键经验）</span>
+    <p>① LLM 判分单次调用方差大、题量少时信号被噪声盖过；② <strong>篇级</strong> Recall / MRR 在 5 篇小语料上饱和（MRR=1、Recall@20=1），分不出配置优劣。</p>
+    <p><strong>解决：</strong>改用<strong>页级金标准</strong>（按章节结构标注答案所在页）+ 确定性检索指标，并把检索层与生成层指标分开。页级后恢复了区分度。</p>
+  </div>
+
+  <h2 id="s7">7 · 设计取舍与限制</h2>
+  <div class="callout c-green"><span class="tag">取舍</span>
+    <p><strong>全链路走 API、不下载本地模型。</strong>嵌入 / 作答 / 重排都用百炼，省去 2GB+ 本地模型与 CPU 慢推理；代价是放弃了本地开源模型与其自带的 sparse 词权重——混合检索的 sparse 路改用纯 Python 的 BM25 补上。</p>
+  </div>
+  <div class="callout c-blue"><span class="tag">诚实的评测结论</span>
+    <p>当前评测语料仅 <strong>5 篇且主题高度同质</strong>（联邦学习 + 概念漂移），纯向量检索已接近天花板，混合 / 重排的增益不明显；页级金标准由章节结构标注、尚待人工核准。<strong>这一结论本身即评测驱动的产出</strong>——增益需在更大、更异质的语料上、核准金标准后复跑才可信。评测<strong>框架</strong>是真正的交付物。</p>
+  </div>
+
+  <h2 id="s8">8 · 运行方式</h2>
+  <pre><code>docker compose up -d qdrant          # 起向量库
+pip install -r requirements.txt
+cp .env.example .env                 # 填 DASHSCOPE_API_KEY（百炼）
+
+python main.py ingest ./data/papers/                 # 导入论文
+python main.py ask "FLASH 在服务器端如何做漂移感知优化？"   # 提问（带引用）
+python main.py eval --limit 2                         # 跑评测（测试用）
+
+uvicorn src.api:app --reload                         # 起 API（/ask、/ask/stream）
+streamlit run app.py                                 # 起聊天界面</code></pre>
+
+  <div class="footer">
+    论文研读 RAG 助手 · 生产级 RAG + 评测驱动 · 全链路阿里百炼 API · Qdrant · FastAPI · Streamlit
+  </div>
+
+</div>
+</body>
+</html>
