@@ -36,10 +36,11 @@ class Settings(BaseSettings):
     )
     llm_temperature: float = Field(default=0.1)
 
-    # ---- Embedding / Reranker（开源，本地）----
-    embedding_model: str = Field(default="BAAI/bge-m3")
-    reranker_model: str = Field(default="BAAI/bge-reranker-v2-m3")
-    embedding_dim: int = Field(default=1024)  # bge-m3 稠密维度
+    # ---- Embedding / Reranker（阿里百炼 API，复用 dashscope key + base_url）----
+    embedding_model: str = Field(default="text-embedding-v3")
+    embedding_dim: int = Field(default=1024)   # text-embedding-v3 默认维度
+    embedding_batch: int = Field(default=10)   # 百炼兼容接口单次最多 10 条
+    reranker_model: str = Field(default="gte-rerank-v2")  # 百炼重排 API（P2 用）
 
     # ---- Qdrant ----
     qdrant_url: str = Field(default="http://localhost:6333")

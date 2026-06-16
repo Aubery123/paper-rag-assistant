@@ -27,8 +27,8 @@
 论文 PDF / arXiv / 个人笔记
    → 解析 loader（PyMuPDF，保留页码/章节结构）
    → 切分 chunker（按结构递归切 + 元数据 paper_id/section/page）
-   → Embedding（开源 BGE-m3，本地）
-   → 写入 Qdrant 向量库（同时存 BM25 稀疏索引）
+   → Embedding（阿里百炼 text-embedding-v3，API）
+   → 写入 Qdrant 向量库（P2 加 BM25 稀疏索引）
 
 【在线 · 问答 retrieve → generate】
 用户问题
@@ -55,10 +55,10 @@
 | 语言 | **Python** | 公共底座 |
 | 文档解析 | **PyMuPDF**（fitz） | 解析 PDF，保留页码/章节，供引用溯源 |
 | 文本切分 | 结构感知递归切分（含 metadata） | 项目一没有正经 Chunking，这里补上 |
-| Embedding | **BGE-m3**（开源，本地跑） | 与项目一的 DashScope 区分，证明能跑开源模型 |
+| Embedding | **阿里百炼 text-embedding-v3**（API） | 全链路走 API，不在本地下载模型；与 LLM 同一 key |
 | 向量库 | **Qdrant** | JD 点名；原生支持混合检索；换库证明广度 |
-| 检索 | **混合检索** BM25 + 向量 + **RRF 融合** | 项目一没有 |
-| 重排 | **bge-reranker-v2-m3** | 项目一没有；显著提升 top 命中 |
+| 检索 | **混合检索** BM25 + 向量 + **RRF 融合** | sparse 用 Qdrant 原生 BM25（非本地神经稀疏） |
+| 重排 | **百炼 gte-rerank-v2**（API） | 项目一没有；显著提升 top 命中 |
 | 生成 LLM | 通义千问 `qwen-plus`（默认，复用已有 key）/ 可换 DeepSeek | 带引用作答 + 流式 |
 | 评测 | **RAGAS 风格指标 + 消融实验** | 项目一最大短板，本项目核心亮点 |
 | 服务 | **FastAPI**（REST + **SSE 流式**） | 补"流式处理" |
@@ -134,8 +134,8 @@ streamlit run app.py
 - 每个 chunk 必带元数据 `{paper_id, title, section, page}`，**引用溯源全靠它**。
 - 检索链路统一：`hybrid → rerank → answer`，参数（k、阈值、权重）集中放 `config.py`。
 - 所有提示词走 `src/prompts`，勿在代码里写死。
-- LLM API key 环境变量统一 `DASHSCOPE_API_KEY`（默认通义千问；换 DeepSeek 时另加）。
-- BGE / reranker 模型本地缓存，首次会下载；评测可离线复跑。
+- LLM / Embedding / 重排统一走百炼，key 环境变量 `DASHSCOPE_API_KEY`（同一个 key）。
+- 全链路 API，不在本地下载模型；离线复跑需联网调用百炼。
 - 运行时产物（`data/` `*.db` `qdrant_storage/` 模型缓存）已 gitignore，勿提交。
 - 每个改进都要**先有评测、再下结论**，对比表进 README（这是本项目的灵魂）。
 
@@ -144,7 +144,7 @@ streamlit run app.py
 ## 进度
 
 - [x] **P0 骨架**：目录 + 依赖 + Docker(Qdrant) + PDF/arXiv 导入与解析（出页码/章节）
-- [ ] **P1 MVP**：切分 + Embedding + Qdrant 入库 + 基础向量检索 + LLM 作答（端到端跑通）
+- [x] **P1 MVP**：切分 + Embedding + Qdrant 入库 + 基础向量检索 + LLM 作答（端到端跑通）
 - [ ] **P2 检索增强**：混合检索（BM25+向量+RRF）+ 重排序 + **引用溯源**
 - [ ] **P3 评测驱动**：评测集 + RAGAS 指标 + **消融对比实验出表**
 - [ ] **P4 产品化**：SSE 流式输出 + Streamlit 界面 + 多文档对比

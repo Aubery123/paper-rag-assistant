@@ -4,8 +4,8 @@ from src.config import settings
 
 
 def test_settings_defaults():
-    assert settings.embedding_model == "BAAI/bge-m3"
-    assert settings.reranker_model == "BAAI/bge-reranker-v2-m3"
+    assert settings.embedding_model == "text-embedding-v3"
+    assert settings.reranker_model == "gte-rerank-v2"
     assert settings.llm_model == "qwen-plus"
 
 

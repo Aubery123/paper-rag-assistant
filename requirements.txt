@@ -1,15 +1,11 @@
 # ---- 文档解析 ----
 pymupdf>=1.24            # PDF 解析，保留页码/章节
 
-# ---- Embedding / 重排（开源，本地）----
-FlagEmbedding>=1.2       # BGE-m3（dense+sparse）/ bge-reranker-v2-m3
-sentence-transformers>=3.0
-
 # ---- 向量库 ----
-qdrant-client>=1.9       # 向量 + 稀疏(BM25) 混合检索
+qdrant-client>=1.9       # 向量检索；P2 混合检索用 Qdrant 原生 BM25
 
-# ---- LLM（通义千问 qwen-plus，OpenAI 兼容接口）----
-openai>=1.30
+# ---- 阿里百炼 API（LLM 作答 + 文本嵌入 + 重排，OpenAI 兼容接口）----
+openai>=1.30             # 统一走 dashscope compatible-mode 端点
 
 # ---- 服务 ----
 fastapi>=0.111
