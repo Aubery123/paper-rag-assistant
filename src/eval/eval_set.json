@@ -1,0 +1,82 @@
+[
+  {
+    "id": "q01",
+    "type": "single",
+    "question": "FedNN 提出了哪两种归一化方法来应对概念漂移数据？",
+    "expected_paper_ids": ["FedNN"],
+    "gold_pages": [["FedNN", 3], ["FedNN", 4]],
+    "reference_answer": "权重归一化（Weight Normalization, WN）与自适应组归一化（Adaptive Group Normalization, AGN）。"
+  },
+  {
+    "id": "q02",
+    "type": "single",
+    "question": "FLASH 在服务器端是如何感知概念漂移并调整优化的？",
+    "expected_paper_ids": ["Flash"],
+    "gold_pages": [["Flash", 2], ["Flash", 3], ["Flash", 4]],
+    "reference_answer": "服务器端基于有效梯度计算有效学习率，用有效梯度平方与梯度二阶矩之差作为漂移信号，漂移时提升有效学习率、稳定时保持。"
+  },
+  {
+    "id": "q03",
+    "type": "single",
+    "question": "FedGAT-DCNN 用于什么任务，采用了哪个联邦学习优化器？",
+    "expected_paper_ids": ["FedGAT-DCNN"],
+    "gold_pages": [["FedGAT-DCNN", 1], ["FedGAT-DCNN", 2]],
+    "reference_answer": "用于信用卡欺诈检测；采用 FedProx 作为联邦优化器，结合图注意力网络与扩张卷积。"
+  },
+  {
+    "id": "q04",
+    "type": "single",
+    "question": "FedDrift 如何处理不同客户端处于不同概念（分布式概念漂移）的情况？",
+    "expected_paper_ids": ["FedDrift"],
+    "gold_pages": [["FedDrift", 6], ["FedDrift", 7], ["FedDrift", 8]],
+    "reference_answer": "通过对客户端按概念聚类并训练多个模型（多模型/聚类联邦学习），用层次聚类合并相同概念的客户端。"
+  },
+  {
+    "id": "q05",
+    "type": "single",
+    "question": "CDA-FedAvg 的概念漂移检测机制是怎样的？",
+    "expected_paper_ids": ["CDA-FedAvg"],
+    "gold_pages": [["CDA-FedAvg", 9], ["CDA-FedAvg", 10], ["CDA-FedAvg", 11]],
+    "reference_answer": "在客户端本地维护短期/长期数据窗口，基于分布差异判断是否发生漂移，再触发自适应聚合。"
+  },
+  {
+    "id": "q06",
+    "type": "single",
+    "question": "FLASH 在客户端侧用什么机制来辅助概念漂移检测？",
+    "expected_paper_ids": ["Flash"],
+    "gold_pages": [["Flash", 2], ["Flash", 3], ["Flash", 4]],
+    "reference_answer": "客户端采用早停训练（early-stopping），通过本地训练损失/更新的变化辅助漂移检测。"
+  },
+  {
+    "id": "q07",
+    "type": "single",
+    "question": "FedGAT-DCNN 中引入扩张卷积（dilated convolution）的作用是什么？",
+    "expected_paper_ids": ["FedGAT-DCNN"],
+    "gold_pages": [["FedGAT-DCNN", 6], ["FedGAT-DCNN", 1]],
+    "reference_answer": "通过增大感受野捕获更广的上下文/长程依赖，增强对复杂欺诈模式的识别。"
+  },
+  {
+    "id": "q08",
+    "type": "cross",
+    "question": "FLASH 与 FedDrift 在应对概念漂移的思路上有什么不同？",
+    "expected_paper_ids": ["Flash", "FedDrift"],
+    "gold_pages": [["Flash", 2], ["Flash", 3], ["FedDrift", 6], ["FedDrift", 7]],
+    "reference_answer": "FLASH 用单一全局模型 + 服务器端漂移感知自适应优化适配漂移后分布；FedDrift 用按概念聚类的多模型训练。"
+  },
+  {
+    "id": "q09",
+    "type": "cross",
+    "question": "这些论文里哪些做了计算/时间复杂度分析？",
+    "expected_paper_ids": ["CDA-FedAvg", "FedGAT-DCNN"],
+    "gold_pages": [["CDA-FedAvg", 13], ["CDA-FedAvg", 14], ["FedGAT-DCNN", 10]],
+    "reference_answer": "CDA-FedAvg 有计算复杂度分析章节；FedGAT-DCNN 有时间复杂度分析章节。"
+  },
+  {
+    "id": "q10",
+    "type": "cross",
+    "question": "联邦学习中处理概念漂移有哪些不同策略？请对比这几篇的做法。",
+    "expected_paper_ids": ["Flash", "FedDrift", "CDA-FedAvg", "FedNN"],
+    "gold_pages": [["Flash", 2], ["FedDrift", 6], ["CDA-FedAvg", 9], ["FedNN", 3]],
+    "reference_answer": "FLASH：服务器端漂移感知自适应优化；FedDrift：按概念聚类的多模型；CDA-FedAvg：漂移检测+自适应FedAvg；FedNN：归一化（WN/AGN）缓解漂移。"
+  }
+]

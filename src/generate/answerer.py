@@ -55,6 +55,33 @@ def _retrieve(
     return cands[:top_k]
 
 
+def retrieve_ranked(
+    question: str,
+    k: int,
+    mode: str | None = None,
+    use_rerank: bool | None = None,
+    paper_ids: list[str] | None = None,
+) -> list[SearchHit]:
+    """返回某配置下的完整排序前 k 个命中（供检索层指标 Recall@k/MRR 评测）。
+
+    与 _retrieve 不同：召回后若重排，则对全部候选重排（top_n=候选数）再截 k，
+    以便在 k=5/10/20 上评估排序质量。
+    """
+    mode = mode or settings.retrieve_mode
+    use_rerank = settings.use_rerank if use_rerank is None else use_rerank
+    recall = max(k, settings.retrieve_top_k)
+
+    if mode == "dense":
+        qvec = get_embedder().encode_dense([question])[0]
+        cands = VectorStore().search_dense(qvec, top_k=recall, paper_ids=paper_ids)
+    else:
+        cands = hybrid_search(question, top_k=recall, paper_ids=paper_ids)
+
+    if use_rerank and cands:
+        cands = rerank(question, cands, top_n=len(cands))
+    return cands[:k]
+
+
 def _build_messages(question: str, hits: list[SearchHit]) -> list[dict]:
     items = []
     for i, h in enumerate(hits, start=1):

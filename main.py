@@ -32,7 +32,9 @@ def _cmd_ask(args) -> None:
 
 
 def _cmd_eval(args) -> None:
-    raise SystemExit("[未实现] eval 将在 P3 接入")
+    from src.eval.run_eval import main as run_eval_main
+
+    run_eval_main(gen_limit=args.limit)
 
 
 def main() -> None:
@@ -56,6 +58,9 @@ def main() -> None:
     p_ask.set_defaults(func=_cmd_ask)
 
     p_eval = sub.add_parser("eval", help="跑评测集，输出消融对比表")
+    p_eval.add_argument(
+        "--limit", type=int, default=None, help="生成层评测只跑前 N 题（测试用，省时）"
+    )
     p_eval.set_defaults(func=_cmd_eval)
 
     args = parser.parse_args()
